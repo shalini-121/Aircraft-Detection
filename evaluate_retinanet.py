@@ -39,7 +39,7 @@ model.head.classification_head = torchvision.models.detection.retinanet.RetinaNe
     in_channels, num_anchors, num_classes
 )
 
-model.load_state_dict(torch.load("retinanet_ucas.pth"))
+model.load_state_dict(torch.load("retinanet_ucas.pth", map_location=device))
 model.eval()
 model.to(device)
 

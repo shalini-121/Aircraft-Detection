@@ -33,10 +33,9 @@ model.roi_heads.box_predictor = torchvision.models.detection.faster_rcnn.FastRCN
     in_features, num_classes
 )
 
-model.load_state_dict(torch.load("faster_rcnn_ucas.pth"))
-model.eval()
-
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+model.load_state_dict(torch.load("faster_rcnn_ucas.pth", map_location=device))
+model.eval()
 model.to(device)
 
 transform = T.Compose([

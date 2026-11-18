@@ -1,0 +1,18 @@
+from docx import Document
+from docx.shared import Inches, Pt
+from docx.enum.text import WD_ALIGN_PARAGRAPH
+
+doc = Document()
+section = doc.sections[0]
+section.left_margin = Inches(1.5)
+section.right_margin = Inches(1.0)
+section.top_margin = Inches(1.0)
+section.bottom_margin = Inches(1.0)
+
+p = doc.add_paragraph("Test Margins and Font")
+run = p.runs[0]
+run.font.name = 'Times New Roman'
+run.font.size = Pt(12)
+
+doc.save('test_format.docx')
+print("Test doc created")

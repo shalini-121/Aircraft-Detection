@@ -26,43 +26,18 @@ class AircraftDataset(torch.utils.data.Dataset):
         )
 
         img = Image.open(img_path).convert("RGB")
-        orig_w, orig_h = img.size
-
-        # Resize ONCE
-        img = img.resize((600, 600))
-
         tree = ET.parse(ann_path)
         root = tree.getroot()
 
         boxes = []
-
         for obj in root.findall("object"):
             b = obj.find("bndbox")
-            xmin = float(b.find("xmin").text)
-            ymin = float(b.find("ymin").text)
-            xmax = float(b.find("xmax").text)
-            ymax = float(b.find("ymax").text)
-
-            if xmax <= xmin or ymax <= ymin:
-                continue
-
-            xmin = xmin * 600 / orig_w
-            xmax = xmax * 600 / orig_w
-            ymin = ymin * 600 / orig_h
-            ymax = ymax * 600 / orig_h
-
-            xmin = max(0, min(xmin, 599))
-            ymin = max(0, min(ymin, 599))
-            xmax = max(1, min(xmax, 600))
-            ymax = max(1, min(ymax, 600))
-
-            if xmax <= xmin or ymax <= ymin:
-                continue
-
-            boxes.append([xmin, ymin, xmax, ymax])
-
-        if len(boxes) == 0:
-            return self.__getitem__((idx + 1) % len(self))
+            boxes.append([
+                float(b.find("xmin").text),
+                float(b.find("ymin").text),
+                float(b.find("xmax").text),
+                float(b.find("ymax").text),
+            ])
 
         boxes = torch.tensor(boxes, dtype=torch.float32)
         labels = torch.ones((len(boxes),), dtype=torch.int64)
@@ -78,16 +53,11 @@ class AircraftDataset(torch.utils.data.Dataset):
     def __len__(self):
         return len(self.imgs)
 
-
 # ======================
 # Model
 # ======================
 model = fasterrcnn_resnet50_fpn(pretrained=True)
 num_classes = 2
-# Freeze backbone to reduce GPU memory
-for param in model.backbone.parameters():
-    param.requires_grad = False
-
 in_features = model.roi_heads.box_predictor.cls_score.in_features
 model.roi_heads.box_predictor = torchvision.models.detection.faster_rcnn.FastRCNNPredictor(
     in_features, num_classes
@@ -103,7 +73,7 @@ train_dataset = AircraftDataset("UCAS-AOD-VOC", "train")
 
 train_loader = DataLoader(
     train_dataset,
-    batch_size=1,
+    batch_size=2,
     shuffle=True,
     collate_fn=lambda x: tuple(zip(*x))
 )
@@ -137,8 +107,6 @@ for epoch in range(num_epochs):
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
-        torch.cuda.empty_cache()
-
 
         total_loss += loss.item()
 
